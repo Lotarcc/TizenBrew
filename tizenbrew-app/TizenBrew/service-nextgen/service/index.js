@@ -75,13 +75,16 @@ module.exports.onStart = function () {
 
     loadModules().then(modules => {
         modulesCache = modules;
-        const serviceModuleList = readConfig().autoLaunchServiceList;
-        if (serviceModuleList.length > 0) {
-            serviceModuleList.forEach(module => {
-                const service = modules.find(m => m.name === module);
-                if (service) startService(service, services);
-            });
-        }
+        // The settings page saves one module's full name as a string ('' when disabled), not a list.
+        let serviceModuleList = readConfig().autoLaunchServiceList;
+        if (typeof serviceModuleList === 'string') serviceModuleList = serviceModuleList ? [serviceModuleList] : [];
+        if (!Array.isArray(serviceModuleList)) serviceModuleList = [];
+        serviceModuleList.forEach(module => {
+            const service = modules.find(m => m.fullName === module || m.name === module);
+            if (service && service.serviceFile) startService(service, services);
+        });
+    }).catch(e => {
+        console.error('Autolaunch of services failed: ' + e);
     });
 
 
